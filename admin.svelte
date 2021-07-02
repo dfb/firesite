@@ -46,7 +46,7 @@ onMount(()=>
 
 function Logout()
 {
-    firesite.userFuncs.doLogout(() =>
+    firesite.userFuncs.doLogout().then(() =>
     {
         userType = null;
     });
@@ -59,19 +59,19 @@ function Login()
 {
     errMsg = '';
     loggingIn = true;
-    firesite.userFuncs.doLogin(username, password, (ok, e) =>
+    firesite.userFuncs.doLogin(username, password).then(() =>
     {
-        if (!ok)
-            errMsg = e;
-        else
-            userType = 'admin';
+        userType = 'admin';
+        loggingIn = false;
+    }).catch(msg =>
+    {
+        errMsg = msg;
         loggingIn = false;
     });
 }
 
 $:if (userType == 'admin')
 {
-    console.log('Starting page watcher');
     adminPageMapWatcher.StartDB();
     adminFileMapWatcher.StartDB();
     setTimeout(()=>

@@ -5,8 +5,8 @@ let firesite = {pageCache, fileCache};
 
 firesite.userFuncs = { // dummy implementations
     getUser:() => null,
-    doLogin:(u, p, cb) => setTimeout(() => cb(false, 'Not implemented')),
-    doLogout:cb => setTimeout(() => cb()),
+    doLogin:(u, p) => new Promise((resolve, reject) => reject('Not implemented')),
+    doLogout:() => new Promise((resolve,reject) => resolve()),
 }
 firesite.widgetMap = {}; // widget name --> svelte component to render for that widget
 
@@ -24,13 +24,12 @@ firesite.RewritePath = function(path) { return path; }
 // .getUser() - gets the current user. This controls whether or not editing is allowed; if
 //  null is returned, no editing is allowed, otherwise the return value should be an object
 //  that has an .id member, representing the current user's ID.
-// .doLogin(username, password, doneCB) - the admin screen will display a login form if the
+// .doLogin(username, password) - the admin screen will display a login form if the
 //  screen is accessed but there is no user (getUser returned null). When the user attempts
 //  to log in, firesite will call doLogin to have the application handle the login process;
-//  the app then calls doneCB(bOk, errMsg) once the login attempt is complete (if login failed,
-//  firesite will display the provided error message).
-// .doLogout(doneCB) - for logged in users, the admin page will include a logout button so that
-//  the app can perform the logout, after which it should call doneCB().
+//  it returns a promise that resolves/rejects.
+// .doLogout() - for logged in users, the admin page will include a logout button so that
+//  the app can perform the logout; it should return a promise that resolves once it's done.
 firesite.Init = function(fs, widgetMap, userFuncs, pathRewriter)
 {
     DBInit(fs);
