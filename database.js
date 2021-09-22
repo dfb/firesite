@@ -1,55 +1,84 @@
-// central location for loading stuff from the DB
+// Helpers for accessing Firestore
 import { writable, readable, derived } from 'svelte/store';
-import { createEventDispatcher } from 'svelte';
+import { getFirestore, collection, doc, query, where, limit, getDoc, setDoc, updateDoc, onSnapshot, connectFirestoreEmulator } from 'firebase/firestore';
 
-export let firestore = null;
-export let adminPageMapWatcher = null;
-export let adminFileMapWatcher = null;
+let firestore = null;
+export { firestore, query, where, limit, collection };
 
-// must be called by app at startup - pass in a reference to firestore
-export function Init(fs)
+// called by index.Init once the firebase has been initialized
+export function Init()
 {
-    firestore = fs;
-    adminPageMapWatcher = MapWatcher(firestore.collection('Page'), true);
-    adminFileMapWatcher = MapWatcher(firestore.collection('File'), true);
+    firestore = getFirestore();
+    if (IN_DEV)
+        connectFirestoreEmulator(firestore, 'localhost', 5002);
+    adminPageMapWatcher = MapWatcher(query(collection(firestore, 'Page')), true);
+    adminFileMapWatcher = MapWatcher(query(collection(firestore, 'File')), true);
 }
 
-let watchers = [];
-// tells all current watchers to start (called by user.js after successful login)
-export function StartWatchers(curUser)
+// helper that takes a firestore query for a list of documents and returns them as a list of
+// objects with their .id member set.
+export function GetDocs(query, limit=null)
 {
-    for (var w of watchers)
+    if (limit != null)
+        query = query.limit(limit);
+    return query.get().then(res =>
     {
-        if (!w.deferred)
-            w.StartDB();
-    }
+        let ret = [];
+        for (let d of res.docs)
+        {
+            let obj = d.data();
+            obj.id = d.id;
+            ret.push(obj);
+        }
+        return ret;
+    })
 }
 
-// called to stop (called e.g. after logout)
-export function StopWatchers()
+// like GetDocs, but for retrieving a single document. Can be called in two ways:
+// - GetDoc(query) - same as GetDocs
+// - GetDoc(colName, ID) - for when you know the primary ID
+export async function GetDoc(collectionNameOrQuery, docID)
 {
-    for (var w of watchers)
-        w.stopDB();
+    if (typeof collectionNameOrQuery === 'string')
+    {   // lookup by primary key
+        let docRef = doc(firestore, collectionNameOrQuery, docID);
+        let docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) return null;
+        let d = docSnap.data();
+        d.id = docSnap.id;
+        return d;
+    }
+    else
+    {   // a query
+        return GetDocs(collectionNameOrQuery, 1).then(docs =>
+        {
+            if (docs && docs.length)
+                return docs[0];
+            return null;
+        });
+    }
 }
 
 // creates an auto-updating database object map store (the value of the store is a dict of { objID -> obj }
 // if deferred=true, you have to call StartDB at some point. Otherwise, data starts coming in after a
 // successful login.
-export function MapWatcher(query, deferred=false)
+// NOTE: for now, all watchers are deferred (manually started) - waiting to see if we want auto-starting ones or not
+export function MapWatcher(theQuery, deferred=false)
 {
     let self = writable({});
-    watchers.push(self);
     self.started = false;
     self.deferred = deferred;
+    if (!deferred)
+        console.log('ERROR: support for auto-starting MapWatchers has not yet been implemented');
     self._val = {}; // our internal state
-    self.query = query;
+    self.query = theQuery;
     self.unsubscribeDB = null; // func to call to stop getting DB updates
     self.StartDB = function()
     {
         if (!self.started)
         {
             self.started = true;
-            self.unsubscribeDB = self.query.onSnapshot(snap =>
+            self.unsubscribeDB = onSnapshot(self.query, snap =>
             {
                 snap.docChanges().forEach(ch =>
                 {
@@ -125,16 +154,14 @@ export function CollectionCache(collName)
                 resolve(rec);
             else
             {
-                firestore.collection(collName).doc(id).get().then(doc =>
+                GetDoc(collName, id).then(doc =>
                 {
-                    if (!doc.exists)
+                    if (doc == null)
                         reject();
                     else
                     {
-                        let d = doc.data();
-                        d.id = id;
-                        self.cache[id] = d;
-                        resolve(d);
+                        self.cache[id] = doc;
+                        resolve(doc);
                     }
                 });
             }
@@ -152,7 +179,8 @@ export function CollectionCache(collName)
             else
             {
                 props.lastmod = new Date().getTime()/1000;
-                firestore.collection(collName).doc(id).update(props).then(resp =>
+                let docRef = doc(firestore, collName, id);
+                updateDoc(docRef, props).then(() =>
                 {   // update our local copy
                     self.cache[id] = Object.assign(self.cache[id], props);
                     resolve();
@@ -162,26 +190,9 @@ export function CollectionCache(collName)
     }
 }
 
+// TODO: these shouldn't live here but in some session-common file
 export let pageCache = new CollectionCache('Page');
 export let fileCache = new CollectionCache('File');
-
-// helper to look up a particular document from a particular collection by its
-// primary ID, returning it as an object with its .id member set, or null if not
-// found.
-export function GetDoc(collectionName, docID)
-{
-    return new Promise((resolve, reject) =>
-    {
-        firestore.collection(collectionName).doc(docID).get().then(doc =>
-        {
-            let ret = null;
-            if (doc.exists)
-            {
-                ret = doc.data();
-                ret.id = doc.id;
-            }
-            resolve(ret);
-        });
-    });
-}
+export let adminPageMapWatcher = null;
+export let adminFileMapWatcher = null;
 
