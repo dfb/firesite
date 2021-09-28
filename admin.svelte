@@ -1,9 +1,10 @@
 <script>
 // main admin screen - shows a login form if user is not logged in
 import { onMount } from 'svelte';
-import firesite from './index';
+import * as utils from './utils';
+import * as users from './users';
 import { writable, derived } from 'svelte/store';
-import { firestore, adminPageMapWatcher, adminFileMapWatcher, SortedListWatcher } from './database.js';
+import { SetDoc, adminPageMapWatcher, adminFileMapWatcher, SortedListWatcher } from './database.js';
 
 /*
 - right pane shows created
@@ -34,22 +35,22 @@ LATER
 */
 
 let loggingIn = false;
-let userType = null; // null, 'anon', 'admin'
-onMount(()=>
+let userType = null; // null, 'anon', 'member', 'admin'
+users.Get().then(u =>
 {
-    if (firesite.userFuncs.getUser())
-        userType = 'admin';
-    else
-        userType = 'anon';
     loggingIn = false;
+    if (users.Is('admin'))
+        userType = 'admin';
+    else if (users.Is('member'))
+        userType = 'member';
+    else if (!users.IsLoggedIn())
+        userType = 'anon';
 });
 
 function Logout()
 {
-    firesite.userFuncs.doLogout().then(() =>
-    {
-        userType = null;
-    });
+    users.Logout()
+    userType = null;
 }
 
 let username = '';
@@ -59,13 +60,12 @@ function Login()
 {
     errMsg = '';
     loggingIn = true;
-    firesite.userFuncs.doLogin(username, password).then(() =>
+    users.Login(username, password).then(() =>
     {
-        userType = 'admin';
-        loggingIn = false;
-    }).catch(msg =>
+        loggingIn = true;
+    },
+    err =>
     {
-        errMsg = msg;
         loggingIn = false;
     });
 }
@@ -113,7 +113,7 @@ let filteredRecords = derived([curTab, filterText, sortedPages, sortedFiles], ([
         {
             if ($tab == TAB_PAGES)
             {
-                let id = firesite.PageIDToPath(rec.id).toLowerCase();
+                let id = utils.PageIDToPath(rec.id).toLowerCase();
                 if (id.indexOf(part) == -1)
                 {
                     allMatch = false;
@@ -164,14 +164,15 @@ let filterTextIsValidRecordName = derived([filterText], ([$f]) =>
     return true;
 });
 
-$:preventCreate = !$filterTextIsValidRecordName || $adminPageMapWatcher[firesite.PagePathToID($filterText)] != null;
+$:preventCreate = !$filterTextIsValidRecordName || $adminPageMapWatcher[utils.PagePathToID($filterText)] != null;
 function CreatePage()
 {
     // TODO: confirmation dialog
-    let docID = firesite.PagePathToID($filterText);
-    let now = firesite.Now();
+    let docID = utils.PagePathToID($filterText);
+    let now = utils.Now();
     let args = {created:now, lastmod:now, content:''}
-    firestore.collection('Page').doc(docID).set(args).then(res =>
+
+    SetDoc('Page', docID, args).then(res =>
     {
         args.id = docID;
         ShowDetails(args);
@@ -182,7 +183,7 @@ function CreatePage()
 function RecordDisplayName(rec)
 {
     if ($curTab == TAB_PAGES)
-        return firesite.PageIDToPath(rec.id).substr(1);
+        return utils.PageIDToPath(rec.id).substr(1);
     else
         return rec.orig;
 }
@@ -194,9 +195,9 @@ function UploadNewFile()
 </script>
 
 <p>
-{#if userType == null || loggingIn}
+{#if loggingIn || userType == null}
 Loading...
-{:else if userType == 'anon'}
+{:else if userType != 'admin'}
     <input placeholder="username" bind:value={username} />
     <input placeholder="password" type="password" bind:value={password} />
     <button disabled={username==''||password==''} on:click={Login}>Login</button>
@@ -230,8 +231,8 @@ Loading...
                 {#if !curRec}
                     Select an item on the left to see details about it.
                 {:else if $curTab == TAB_PAGES}
-                    <h4>{firesite.PageIDToPath(curRec.id)}</h4>
-                    <a href="{firesite.PageIDToPath(curRec.id)}">[View]</a>
+                    <h4>{utils.PageIDToPath(curRec.id)}</h4>
+                    <a href="{utils.PageIDToPath(curRec.id)}">[View]</a>
                 {:else if $curTab == TAB_FILES}
                     <b>ID: </b> {curRec.id} <b>Type: </b> {curRec.type}
                     {#if curRec.w && curRec.h}({curRec.w} x {curRec.h}){/if}

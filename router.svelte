@@ -19,6 +19,7 @@ export function Init(_routes, _notFoundComp)
 <script>
 // handles routing, page loading, browser back/fwd button support, etc.
 import { onMount } from 'svelte';
+import { writable } from 'svelte/store';
 
 onMount(() =>
 {
@@ -73,7 +74,7 @@ function OnAnyClick(e)
 
 let curComp = null;
 let curParams = null;
-
+let pageKey = 0;
 // Loads a page from the DB and displays it
 window.LoadPage = function(path, historyAction='push')
 {
@@ -110,14 +111,17 @@ window.LoadPage = function(path, historyAction='push')
             break;
         }
     }
+    pageKey += 1; // trigger a reload even if the same comp is being used (e.g. SitePage)
 }
 
 </script>
 
 <svelte:window on:click|capture={OnAnyClick}/>
-{#if curParams}
-<svelte:component this={curComp} params={curParams} />
-{:else}
-<svelte:component this={curComp} />
-{/if}
+{#key pageKey}
+    {#if curParams}
+    <svelte:component this={curComp} params={curParams} />
+    {:else}
+    <svelte:component this={curComp} />
+    {/if}
+{/key}
 

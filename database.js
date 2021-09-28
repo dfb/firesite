@@ -91,7 +91,7 @@ export function MapWatcher(theQuery, deferred=false)
                         self._val[d.id] = d;
                     }
                     else
-                        console.log('WARNING: unhandled change type', ch.type);
+                        console.log('WARNING: unhandled change type', ch.type, ch);
                 });
                 self.set(self._val);
             });
@@ -188,6 +188,12 @@ export function CollectionCache(collName)
             }
         });
     }
+}
+
+// sets (overwrites) all the fields in the given doc, returning a Promise
+export function SetDoc(collectionName, docID, props)
+{
+    return setDoc(doc(firestore, collectionName, docID), props);
 }
 
 // TODO: these shouldn't live here but in some session-common file

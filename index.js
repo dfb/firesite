@@ -5,15 +5,17 @@ import { getAuth, setPersistence } from 'firebase/auth';
 import * as database from './database';
 import * as users from './users';
 import * as Router from './router.svelte';
+import * as SitePage from './SitePage.svelte';
 
 let auth = null;
-export function Init({firebaseConfig, devFuncURL, prodFuncURL, routes, notFoundComp})
+export function Init({firebaseConfig, devFuncURL, prodFuncURL, routes, notFoundComp, appWidgets})
 {
     firebase.Init(firebaseConfig, devFuncURL, prodFuncURL);
     database.Init();
     users.Init();
     auth = getAuth();
     Router.Init(routes, notFoundComp)
+    SitePage.Init(appWidgets);
 }
 
 export { firebase, auth, database, users };

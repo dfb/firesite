@@ -1,17 +1,9 @@
-<script>
-// The main logic for displaying pages on the site. Every page's content lives in the database and
-// dynamically loaded and rendered. We use markdown for ease of editing but it's ok to dip into
-// HTML as needed.
-
+<script context="module">
 import { pageCache } from './database.js';
-import { tick, onMount } from 'svelte';
-import { writable, derived } from 'svelte/store';
+import admin from './admin.svelte';
 import { Remarkable } from 'remarkable';
 import nearley from 'nearley';
 import grammar from './widget-grammar.js';
-import firesite from './index';
-import admin from './admin.svelte';
-
 let builtinWidgets = {admin};
 
 // set up the markdown translator, including support for custom widget syntax
@@ -28,7 +20,7 @@ remark.use(rem =>
         let t = tokens[idx+1];
         if (t && t.type == 'inline')
         {
-            let id = firesite.Slugify(tokens[idx+1].content);
+            let id = utils.Slugify(tokens[idx+1].content);
             return `<h${tokens[idx].hLevel} id="${id}">`;
         }
         return `<h${tokens[idx].hLevel}>`; // this usually (only?) happens during editing markdown
@@ -76,19 +68,6 @@ remark.inline.ruler.push('widget', (state, checkMode) =>
     }
 });
 
-// this function is called to transform a previously-parsed widget tag
-// into actual HTML. Since the rendered form is a svelte component, this call
-// returns the HTML for a div with a unique ID, and then saves the widget info.
-// Once the markdown processing is complete and the HTML has been injected into the
-// DOM, a final step will inject svelte components into the placeholder divs.
-remark.renderer.rules['widget'] = (tokens, i, options, env, renderer) =>
-{
-    let info = tokens[i].widget;
-    info.elID = nextCompID++;
-    placeholders.push(info);
-    return `<widget id="${info.elID}"></widget>`;
-};
-
 remark.block.ruler.before('code', 'widget', (state, startLine, endLine, silent) =>
 {
     let line = state.src.slice(state.bMarks[startLine], state.eMarks[startLine]);
@@ -130,56 +109,46 @@ remark.block.ruler.before('code', 'widget', (state, startLine, endLine, silent) 
 // long as the markup doesn't in turn try to embed other widgets.
 window.remark = remark;
 
+let appWidgets = {}; // name -> widget component
+export function Init(widgetMap)
+{
+    appWidgets = widgetMap;
+}
+
+</script>
+
+<script>
+// The main logic for displaying pages on the site. Every page's content lives in the database and
+// dynamically loaded and rendered. We use markdown for ease of editing but it's ok to dip into
+// HTML as needed.
+
+import { tick, onMount } from 'svelte';
+import { writable, derived } from 'svelte/store';
+import * as utils from './utils';
+import * as users from './users';
+
 let curDocID = null; // the Page.id from the DB
 let origRaw = ''; // what we got from the DB, before any edits
 let raw = ''; // the page data from the DB (the input)
 let content = ''; // the HTML for the current page (the output)
-let nextCompID = 100; // each div for a svelte component gets a unique ID
 let placeholders = []; // a list of widget info along with their placeholder div IDs
 
-// Loads a page from the DB and displays it
-window.LoadPage = function(path, historyAction='push')
+let nextCompID = 100; // each div for a svelte component gets a unique ID
+
+// this function is called to transform a previously-parsed widget tag
+// into actual HTML. Since the rendered form is a svelte component, this call
+// returns the HTML for a div with a unique ID, and then saves the widget info.
+// Once the markdown processing is complete and the HTML has been injected into the
+// DOM, a final step will inject svelte components into the placeholder divs.
+remark.renderer.rules['widget'] = (tokens, i, options, env, renderer) =>
 {
-    if (path.endsWith('/'))
-        path = path.substr(0, path.length-1);
+    let info = tokens[i].widget;
+    info.elID = nextCompID++;
+    placeholders.push(info);
+    return `<widget id="${info.elID}"></widget>`;
+};
 
-    path = firesite.RewritePath(path);
-    if (!path)
-        path = '/';
 
-    let moveToTop = true;
-    if (historyAction == 'push')
-        history.pushState({pagePath:path, scroll:window.scrollY}, 'Title', path);
-    else if (historyAction == 'replace')
-        history.replaceState({pagePath:path, scroll:window.scrollY}, 'Title', path);
-    else
-        moveToTop = false; // popping, probably
-    if (moveToTop)
-        window.scrollTo(0,0);
-
-    if (path == '/')
-        path = 'index'; // special case
-    else if (path.startsWith('/'))
-        path = path.substr(1);
-
-    let docID = firesite.PagePathToID(path);
-    if (docID == 'admin')
-    {   // special case: "/admin" goes to the builtin admin page
-        _OnPageFetched('admin', '{admin}');
-    }
-    else
-    {
-        pageCache.Get(docID).then(doc =>
-        {
-            _OnPageFetched(docID, doc.content);
-        }).catch(ignore =>
-        {
-            // TODO: handle 404
-            console.log('NO SUCH PAGE', docID);
-            _OnPageFetched(null, '');
-        })
-    }
-}
 
 // called once the page record has been retrieved from the DB or cache
 function _OnPageFetched(docID, content)
@@ -194,8 +163,7 @@ function _OnPageFetched(docID, content)
 let editorAllowed = false;
 async function UpdateContent()
 {
-    let user = firesite.userFuncs.getUser();
-    editorAllowed = user != null;
+    editorAllowed = users.Is('admin');
     placeholders = [];
     content = remark.render(raw).trim();
 
@@ -214,7 +182,7 @@ async function UpdateContent()
         // find the widget and instantiate it
         let klass = builtinWidgets[p.widget];
         if (!klass)
-            klass = firesite.widgetMap[p.widget];
+            klass = appWidgets[p.widget];
         let id = p.elID;
         delete p.elID;
         if (!klass)
@@ -229,32 +197,20 @@ async function UpdateContent()
     await tick();
 }
 
-// anchor tags are rewritten after loading so that, instead of following the link, they
-// instead call this function to handle the click so that we can load the new page but
-// still remain on the same page from the browser's perspective (links that were to external
-// sites are left unmodified, so clicking them never gets us here).
-function LinkClick(e)
-{
-    e.preventDefault();
-    let path = e.target.closest('a').pathname;
-
-    // get the browser to play along with our fake navigation and then load the new content
-    LoadPage(path);
-}
-
-window.onpopstate = e =>
-{
-    // when the user hits the back button, navigate to that page and restore the scroll position
-    LoadPage(e.state ? e.state.pagePath : '', null);
-    if (e.state && e.state.scroll)
-        window.scrollTo(0, e.state.scroll);
-};
-
 onMount(() =>
 {
     // on load, grab the path from the browser and load it
     let path = document.location.pathname + (document.location.hash || ''); // special case: on page load, include the hash so we can convert from site v0 SPA links
-    LoadPage(path, 'replace');
+    let docID = utils.PagePathToID(path);
+    pageCache.Get(docID).then(doc =>
+    {
+        _OnPageFetched(docID, doc.content);
+    }).catch(ignore =>
+    {
+        // TODO: handle 404
+        console.log('NO SUCH PAGE', docID);
+        _OnPageFetched(null, '');
+    });
 });
 
 $:haveEdits = origRaw != raw;
@@ -293,61 +249,23 @@ function OnBarDragEnd(e)
 let saving = false;
 function SaveEdits()
 {
-    let user = firesite.userFuncs.getUser();
-    if (user == null)
+    let userID = users.CurrentUserID();
+    if (!userID)
     {
         console.log('getUser returned null; skipping saves');
         return;
     }
     saving = true;
-    pageCache.Update(curDocID, {content:raw, lastmodBy:user.id}).then(() =>
+    pageCache.Update(curDocID, {content:raw, lastmodBy:userID}).then(() =>
     {
         origRaw = raw;
         saving = false;
     });
 }
 
-// called anytime the user clicks anywhere on the page; inspects the click to see if it is a click on an
-// anchor tag for a local link and, if so, reroutes it so we remain a SPA.
-function OnAnyClick(e)
-{   // let the click happen if modifiers are pressed
-    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey)
-        return true;
-
-    // see if it's an anchor tag - either this element or a parent
-    let anchor = null;
-    let el = e.target;
-    while (el)
-    {
-        if (el.nodeName.toLowerCase() == 'a')
-        {
-            anchor = el;
-            break;
-        }
-
-        el = el.parentNode;
-    }
-    if (!anchor)
-        return true;
-
-    // if it's an off-site link, allow it
-    if (anchor.origin && anchor.origin != window.location.origin)
-        return true;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    // get the browser to play along with our fake navigation and then load the new content
-    let path = anchor.getAttribute('href');
-    LoadPage(path);
-    return false;
-}
-
 </script>
 
-<svelte:window on:click|capture={OnAnyClick}/>
-
-{#if editorAllowed && curDocID != 'admin'}
+{#if editorAllowed}
 <div style="display:flex; flex-direction:column; height:100vh">
     <div style="height:{contentH}vh; overflow:auto">
         {@html content}
