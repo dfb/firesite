@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() { return request.auth.token.roles.admin == 1; }
+    function isMember() { return request.auth.token.roles.admin == 1 || request.auth.token.roles.member == 1; }
+    match /File/{document=**}
+    {
+        allow read;
+        allow write: if isAdmin();
+    }
+
+    match /Page/{document=**}
+    {
+        allow read;
+        allow write: if isAdmin();
+    }
+
+    match /User/{userID}
+    {
+        allow read: if isAdmin() || request.auth.uid == userID;
+        allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

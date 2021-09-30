@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "fire-deploy": "firebase deploy --only hosting",
+    "bd": "npm-run-all -s build fire-deploy"
+  }
+}

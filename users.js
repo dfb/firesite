@@ -3,10 +3,12 @@ import sha from 'js-sha3';
 import { getAuth, signInWithCustomToken, signInAnonymously } from 'firebase/auth';
 import { GetDoc } from './database';
 
+let saltPrefix = ''; // just used as extra salt when hashing passwords
 let auth = null;
 // called by index.Init once firebase init is done
-export function Init()
+export function Init(passwordSaltPrefix)
 {
+    saltPrefix = passwordSaltPrefix || 'firesite';
     auth = getAuth();
     auth.onAuthStateChanged(OnAuthStateChanged);
 }
@@ -82,7 +84,7 @@ export function Login(username, password)
     username = username.toLowerCase();
     return new Promise((resolve, reject) =>
     {
-        let h = sha.sha3_256('sfc:' + username + '||' + password);
+        let h = sha.sha3_256(saltPrefix + ':' + username + '||' + password);
         CloudCall('login', {u:username, h}).then(async resp =>
         {
             console.log('LOGIN RESP', resp);

@@ -3,11 +3,10 @@ import { initializeApp } from 'firebase/app';
 
 // figure out which environment we're running in. By default, we'll let rollup modify the following variable
 // so that it correctly holds the value 'dev' or 'prod':
-const EXT_ENV_NAME = 'current_build_env'; // auto-modified by the rollup replace plugin
-let ENV_NAME = EXT_ENV_NAME;
+let ENV_NAME = (import.meta.env.MODE == 'development') ? 'dev' : 'prod';
 
 // if we are in dev, allow hitting prod resources via ?prod=1 on the URL
-if (EXT_ENV_NAME == 'dev')
+if (ENV_NAME == 'dev')
 {
     let params = Object.fromEntries(new URLSearchParams(location.search));
     if (params.prod == '1')
