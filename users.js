@@ -87,7 +87,7 @@ export function Login(username, password)
         let h = sha.sha3_256(saltPrefix + ':' + username + '||' + password);
         CloudCall('login', {u:username, h}).then(async resp =>
         {
-            console.log('LOGIN RESP', resp);
+            //console.log('LOGIN RESP', resp);
             if (resp.error)
             {
                 console.log('Auth failed:', resp);
@@ -176,7 +176,9 @@ export function IsAnonymous()
 {
     let u = SGet();
     //console.log('U?', u);
-    return (!u || u.anon || false);
+    if (!u) return true;
+    if (!Is('admin') && !Is('member')) return true;
+    return false;
 }
 
 // returns true if there is a real logged in user

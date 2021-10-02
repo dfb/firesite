@@ -201,6 +201,8 @@ onMount(() =>
 {
     // on load, grab the path from the browser and load it
     let path = document.location.pathname + (document.location.hash || ''); // special case: on page load, include the hash so we can convert from site v0 SPA links
+    if (!path || path == '/')
+        path = 'index'; // special case: '/' --> 'index'
     let docID = utils.PagePathToID(path);
     pageCache.Get(docID).then(doc =>
     {
