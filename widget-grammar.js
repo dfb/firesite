@@ -1,9 +1,4 @@
-// Generated automatically by nearley, version 2.20.1
-// http://github.com/Hardmath123/nearley
-(function () {
-function id(x) { return x[0]; }
-
-const moo = require("moo");
+import * as moo from 'moo';
 
 const lexer = moo.states({
     main: {
@@ -25,7 +20,7 @@ const lexer = moo.states({
     },
 })
 
-var grammar = {
+let grammar = {
     Lexer: lexer,
     ParserRules: [
     {"name": "widget", "symbols": ["_", (lexer.has("openBrace") ? {type: "openBrace"} : openBrace), "_", (lexer.has("identifier") ? {type: "identifier"} : identifier), "_", "arglist", "_", (lexer.has("closeBrace") ? {type: "closeBrace"} : closeBrace), "_"], "postprocess": d => { return {widget:d[3].value, args:d[5]}}},
@@ -42,9 +37,5 @@ var grammar = {
 ]
   , ParserStart: "widget"
 }
-if (typeof module !== 'undefined'&& typeof module.exports !== 'undefined') {
-   module.exports = grammar;
-} else {
-   window.grammar = grammar;
-}
-})();
+
+export default grammar;
