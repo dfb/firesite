@@ -38,6 +38,7 @@
     }
   },
   "functions": {
+    "runtime": "nodejs12",
     "source": "functions"
   }
 }

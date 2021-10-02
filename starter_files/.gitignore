@@ -2,6 +2,10 @@ setupenv
 node_modules
 package-lock.json
 .*~
+*-debug.log
 src/firesite
+functions/firesite
 dist
 .firebase/*.cache
+gcp-prod.json
+dbsnap/
