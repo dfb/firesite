@@ -173,4 +173,5 @@ but that's about it.
 - more default widgets, such as Image
 - file manager
 - make everything less crappy
+- local dev but hit prod db/functions: add `?prod=1` to page URL
 
