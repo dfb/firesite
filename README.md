@@ -127,9 +127,50 @@ production databases don't share any data, you'll need to add users in both plac
     - `passwordHash` (type=string), with a value of the calculated password hash
     - `roles` (tyep=map), with an entry of either `member` or `admin` with a value of 1 (type=number)
 
+# Routes and site layout
+The `ROUTES` list in `src/App.svelte` is where you define the organization of your website - what pages are available
+and what URLs are used to reach them. For each page, you need to decide if you want it to be a web-editable *SitePage*
+or if you want it to be implemented as a *Svelte component*.
+
+SitePages can be created and edited through the web (and without access to the dev environment) and support Markdown or
+"raw" HTML, and can make use of reusable Svelte components you have created. SitePages are a good option for cases where
+you need to give edit access to a non-developer or to someone who doesn't want to mess with getting a dev environment set
+up, and/or when you want to be able to make quick edits to a site, including when you're away from your main computer. They
+are not a good option when your page needs extensive Javascript or you want to make use of the power of Svelte.
+
+Pages implemented as Svelte components offer unlimited power/flexibility, but require development experience. Also, adding
+new pages or editing these pages requires you to do a new release of your site.
+
+Each entry in the routes table is a Javascript object with:
+- `path` - a string or regex for the page. If you use a regex with named parameters, your component should expose a `params` variable to receive any named parameters.
+- `comp` - the component that will be rendered for that page
+
+Note that the routes table is *ordered* and Firesite will use the first match it finds.
+
+As an example, here is a routes table for a site that uses a Svelte component for the landing (index) page, exposes the builtin
+admin page, and then implements everything else on the site as SitePages:
+    ```js
+    import HomePage from './homepage.svelte'; // you'd implement this as a normal Svelte component
+    const ROUTES = [
+        {path:'/', comp:HomePage},
+        {path:'/secret/admin', comp:admin},
+        {path:new RegExp('.*'), comp:SitePage},
+    ]
+    ```
+
+If you want the landing page ('/') to be a SitePage, give it the name `index`; Firesite recognizes this as a special case.
+
+Currently, the builtin admin page is best described as "absurdly cheesy" and can be used to see what pages exist and add new pages,
+but that's about it.
+
 # Still to document
-- adding more backend actions - don't add whole new functions, just add an action. Client side, use CloudCall.
-- adding pages
-- adding SitePage entries
+- Uploading images and other files
 - creating SitePage widgets
+- using SitePage widgets - in the markdown, `{widgetname param="x" other="y"}`
+- adding more backend actions - don't add whole new functions, just add an action. Client side, use CloudCall.
+
+# Still to do
+- more default widgets, such as Image
+- file manager
+- make everything less crappy
 
