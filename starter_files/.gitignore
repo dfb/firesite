@@ -1,0 +1,7 @@
+setupenv
+node_modules
+package-lock.json
+.*~
+src/firesite
+dist
+.firebase/*.cache
