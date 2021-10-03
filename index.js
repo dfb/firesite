@@ -4,6 +4,7 @@ import * as firebase from './firebase';
 import { getAuth, setPersistence } from 'firebase/auth';
 import * as database from './database';
 import * as users from './users';
+import * as utils from './utils';
 import * as Router from './router.svelte';
 import * as SitePage from './SitePage.svelte';
 
@@ -18,7 +19,7 @@ export function Init({firebaseConfig, devFuncURL, prodFuncURL, passwordSaltPrefi
     SitePage.Init(appWidgets);
 }
 
-export { firebase, auth, database, users };
+export { firebase, auth, database, utils, users };
 
 // Runs the given sub-function on the perp-man cloud function. Returns a promise that
 // yields the result object. If something went wrong, the returned object will have a

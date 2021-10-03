@@ -39,7 +39,7 @@ working directory, getting Firesite set up, and then layering in existing files 
 assets.
 
 - `mkdir mysite ; cd mysite`
-- `mkdir dbsnap src ; cd src`
+- `mkdir dbsnap src public ; cd src`
 - `git clone git@github.com:dfb/firesite.git`
 - `cp -r firesite/starter_files/* ..`
 - `cd ../functions`
@@ -160,11 +160,17 @@ admin page, and then implements everything else on the site as SitePages:
 
 If you want the landing page ('/') to be a SitePage, give it the name `index`; Firesite recognizes this as a special case.
 
+As mentioned earlier, a Firesite-based website is actually an SPA, though from the user's perspective this isn't overly obvious -
+the URLs *look* like normal URLs (and are not hash-based) and the browser history works properly. The site is an SPA, however, so
+that navigation among pages doesn't reset our connection to the database or reset our in memory cache of records read from the
+database. At some point this may change (e.g. use local storage for the cache).
+
 Currently, the builtin admin page is best described as "absurdly cheesy" and can be used to see what pages exist and add new pages,
 but that's about it.
 
 # Still to document
 - Uploading images and other files
+- Public dir - put favicon, global css, shipped images, etc. in here and '/public' maps to '/' on the finished site
 - creating SitePage widgets
 - using SitePage widgets - in the markdown, `{widgetname param="x" other="y"}`
 - adding more backend actions - don't add whole new functions, just add an action. Client side, use CloudCall.
