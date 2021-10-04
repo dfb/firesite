@@ -197,7 +197,8 @@ async function UpdateContent()
     await tick();
 }
 
-onMount(() =>
+users.Get().then(user =>
+    //onMount(() =>
 {
     // on load, grab the path from the browser and load it
     let path = document.location.pathname + (document.location.hash || ''); // special case: on page load, include the hash so we can convert from site v0 SPA links
