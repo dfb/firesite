@@ -84,11 +84,13 @@ window.LoadPage = function(path, historyAction='push')
     if (!path)
         path = '/';
 
+    let search = document.location.search || '';
+
     let moveToTop = true;
     if (historyAction == 'push')
-        history.pushState({pagePath:path, scroll:window.scrollY}, 'Title', path);
+        history.pushState({pagePath:path+search, scroll:window.scrollY}, 'Title', path+search);
     else if (historyAction == 'replace')
-        history.replaceState({pagePath:path, scroll:window.scrollY}, 'Title', path);
+        history.replaceState({pagePath:path+search, scroll:window.scrollY}, 'Title', path+search);
     else
         moveToTop = false; // popping, probably
     if (moveToTop)
