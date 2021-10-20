@@ -16,7 +16,7 @@ export function Init({firebaseConfig, devFuncURL, prodFuncURL, passwordSaltPrefi
     users.Init(passwordSaltPrefix);
     auth = getAuth();
     Router.Init(routes, notFoundComp)
-    SitePage.Init(appWidgets);
+    SitePage.Init(appWidgets, notFoundComp);
 }
 
 export { firebase, auth, database, utils, users };

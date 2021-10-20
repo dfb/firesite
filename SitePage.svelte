@@ -110,9 +110,11 @@ remark.block.ruler.before('code', 'widget', (state, startLine, endLine, silent) 
 window.remark = remark;
 
 let appWidgets = {}; // name -> widget component
-export function Init(widgetMap)
+let notFoundWidget = null; // what to show when an invalid link is passed to us
+export function Init(widgetMap, _notFoundWidget)
 {
     appWidgets = widgetMap;
+    notFoundWidget = _notFoundWidget;
 }
 
 </script>
@@ -197,9 +199,11 @@ async function UpdateContent()
     await tick();
 }
 
+let showNotFound = false;
 users.Get().then(user =>
     //onMount(() =>
 {
+    showNotFound = false;
     // on load, grab the path from the browser and load it
     let path = document.location.pathname + (document.location.hash || ''); // special case: on page load, include the hash so we can convert from site v0 SPA links
     if (!path || path == '/')
@@ -213,6 +217,7 @@ users.Get().then(user =>
         // TODO: handle 404
         console.log('NO SUCH PAGE', docID);
         _OnPageFetched(null, '');
+        showNotFound = true;
     });
 });
 
@@ -266,10 +271,19 @@ function SaveEdits()
     });
 }
 
+function CreateMissingPage()
+{
+}
+
 </script>
 
 {#if editorAllowed}
 <div style="display:flex; flex-direction:column; height:100vh">
+    {#if !curDocID}
+        <div>
+            Page not found. <button on:click={CreateMissingPage}>Create it</button>
+        </div>
+    {/if}
     <div style="height:{contentH}vh; overflow:auto">
         {@html content}
     </div>
@@ -283,8 +297,10 @@ function SaveEdits()
     </editorBar>
     <textarea style="flex:1;" bind:value={raw} on:input={UpdateContent} />
 </div>
-{:else}
+{:else if curDocID}
     {@html content}
+{:else if showNotFound}
+    <svelte:component this={notFoundWidget} />
 {/if}
 
 <style>
