@@ -67,7 +67,7 @@ assets.
     - add `setupenv` to .gitignore because you should always keep this file secret and **never** put it in source control.
     - when you open a new shell/console to do work on this project, do `source setupenv` and then you'll be able to run Firebase commands.
 - `firebase use --add` and select your Firebase project
-- `firebase deploy --only functions,firestore:rules` # deploy the initial cloud functions and access control rules for Firestore
+- `firebase deploy --only functions,firestore:rules,storage:rules` # deploy the initial cloud functions and access control rules for Firestore
 - Go to the Firebase web console and:
     - click on the `Functions` item in the left panel, and in the Functions dashboard you will see a `main` function listed - this is the function that was just deployed.
     - The Trigger section will display a URL to access this function; put that URL in `src/App.svelte` as the value for the `prodFuncURL` in the `firesite.Init` call.

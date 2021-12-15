@@ -1,6 +1,6 @@
 // Helpers for accessing Firestore
 import { writable, readable, derived } from 'svelte/store';
-import { getFirestore, collection, doc, query, where, limit, getDoc, setDoc, updateDoc, onSnapshot, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore, collection, doc, query, where, limit, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, connectFirestoreEmulator } from 'firebase/firestore';
 
 let firestore = null;
 export { firestore, query, where, limit, collection };
@@ -194,6 +194,18 @@ export function CollectionCache(collName)
 export function SetDoc(collectionName, docID, props)
 {
     return setDoc(doc(firestore, collectionName, docID), props);
+}
+
+// updates only the given fields in a doc. Returns a Promise.
+export function UpdateDoc(collectionName, docID, props)
+{
+    return updateDoc(doc(firestore, collectionName, docID), props);
+}
+
+// erases a doc from a collection. Returns a Promise.
+export function DeleteDoc(collectionName, docID)
+{
+    return deleteDoc(doc(firestore, collectionName, docID));
 }
 
 // TODO: these shouldn't live here but in some session-common file

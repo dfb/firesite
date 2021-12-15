@@ -36,3 +36,14 @@ export function PagePathToID(path)
     return path.replace(RE_FIND_SLASHES, '__');
 }
 
+// given a number of bytes, returns a nicer-looking string in KB/MB/GB
+export function FileSizeStr(n)
+{
+    if (n < 1024) return n + ' bytes';
+    n = Math.round(n / 1024);
+    if (n < 1024) return n + ' KB';
+    n = Math.round(n / 1024);
+    return n + ' MB';
+}
+
+

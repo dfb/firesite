@@ -1,10 +1,12 @@
 <script>
 // main admin screen - shows a login form if user is not logged in
-import { onMount } from 'svelte';
+import { tick, onMount } from 'svelte';
 import * as utils from './utils';
 import * as users from './users';
+import ModalUpload from './modal_upload.svelte';
 import { writable, derived } from 'svelte/store';
-import { SetDoc, adminPageMapWatcher, adminFileMapWatcher, SortedListWatcher } from './database.js';
+import { DeleteDoc, SetDoc, adminPageMapWatcher, adminFileMapWatcher, SortedListWatcher } from './database.js';
+import { getStorage, ref, deleteObject } from 'firebase/storage';
 
 /*
 - right pane shows created
@@ -188,8 +190,49 @@ function RecordDisplayName(rec)
         return rec.orig;
 }
 
-function UploadNewFile()
+function UploadNewFile(overwriteID=null)
 {
+    OpenModal(ModalUpload, {overwriteID}).then(async res =>
+    {
+        if (res.closeCode != MODAL_OK) return;
+        let fileID = res.comp.uploadedFile.id;
+        $filterText = '';
+        await tick()
+        for (let rec of $filteredRecords)
+        {
+            if (rec.id == fileID)
+            {
+                console.log('yeah yeah', fileID, rec);
+                ShowDetails(rec);
+                break;
+            }
+        }
+    });
+}
+
+function DeleteFile()
+{
+    OpenConfirmModal('Are you sure you want to delete this file? This action cannot be undone.', 'Confirm delete').then(res =>
+    {
+        if (res.closeCode != MODAL_OK) return;
+        let docID = curRec.id;
+        let storagePath = curRec.storagePath;
+        curRec = null;
+        console.log('Deleting', docID, storagePath);
+        OpenBusyModal('Deleting...');
+        deleteObject(ref(getStorage(), storagePath)).then(() => // first delete from storage
+        {   // now delete DB record
+            DeleteDoc('File', docID).then(() =>
+            {
+                CloseModal();
+            });
+
+        }).catch(err => {
+            CloseModal();
+            console.log('Storage deletion failed:', err);
+            OpenAlertModal('Failed to delete file. Please try again.');
+        });
+    });
 }
 
 </script>
@@ -216,7 +259,7 @@ Loading...
             {#if $curTab == TAB_PAGES}
             <button disabled={preventCreate} on:click={CreatePage}>Create page</button>
             {:else if $curTab == TAB_FILES}
-            <button on:click={UploadNewFile}>Upload file</button>
+            <button on:click={()=>UploadNewFile(null)}>Upload file</button>
             {/if}
         </searchbar>
         <recordinfoarea>
@@ -236,6 +279,8 @@ Loading...
                 {:else if $curTab == TAB_FILES}
                     <b>ID: </b> {curRec.id} <b>Type: </b> {curRec.type}
                     {#if curRec.w && curRec.h}({curRec.w} x {curRec.h}){/if}
+                    <button on:click={()=>UploadNewFile(curRec.id)}>Upload new version</button>
+                    <button on:click={DeleteFile}>Delete this file</button>
                     <br/><b>Orig filename: </b> {curRec.orig} <a href="{curRec.url}" target="_blank">[link]</a>
                     <br/>
                     {#if curRec.type == 'image'}
