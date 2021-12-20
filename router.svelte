@@ -2,7 +2,8 @@
 <script context="module">
 let routes = []; // ordered list of objects describing routes, each has at least a .path and a .comp member
 let notFoundComp = null; // the comp to render when no suitable route can be found
-export function Init(_routes, _notFoundComp)
+let routeRewriter = null; // optional app-provided processing func for rewriting URLs: rewriter(orig) -> newURL
+export function Init(_routes, _notFoundComp, _routeRewriter)
 {
     routes = _routes;
 
@@ -13,6 +14,7 @@ export function Init(_routes, _notFoundComp)
             r.params = r.path.toString().indexOf('(?<') != -1;
     }
     notFoundComp = _notFoundComp;
+    routeRewriter = _routeRewriter;
 }
 </script>
 
@@ -81,6 +83,8 @@ window.LoadPage = function(path, historyAction='push')
     if (path.endsWith('/'))
         path = path.substr(0, path.length-1);
 
+    if (routeRewriter)
+        path = routeRewriter(path);
     if (!path)
         path = '/';
 

@@ -9,13 +9,13 @@ import * as Router from './router.svelte';
 import * as SitePage from './SitePage.svelte';
 
 let auth = null;
-export function Init({firebaseConfig, devFuncURL, prodFuncURL, passwordSaltPrefix, routes, notFoundComp, appWidgets})
+export function Init({firebaseConfig, devFuncURL, prodFuncURL, passwordSaltPrefix, routes, routeRewriter, notFoundComp, appWidgets})
 {
     firebase.Init(firebaseConfig, devFuncURL, prodFuncURL);
     database.Init();
     users.Init(passwordSaltPrefix);
     auth = getAuth();
-    Router.Init(routes, notFoundComp)
+    Router.Init(routes, notFoundComp, routeRewriter);
     SitePage.Init(appWidgets, notFoundComp);
 }
 
