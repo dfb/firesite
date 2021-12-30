@@ -9,6 +9,11 @@ import { SetDoc, UpdateDoc, DeleteDoc } from './database.js';
 export let overwriteID = null; // in: if provided, upload will override the existing File entry
 export let uploadedFile = null; // out: on successful upload, the File object from the DB
 
+/*
+TODO
+- when overwriting a file, if original was an image, require an image
+*/
+
 let uploading = false;
 function OnClose(withCode)
 {

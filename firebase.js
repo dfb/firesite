@@ -5,6 +5,7 @@ import { getStorage, ref} from 'firebase/storage';
 // figure out which environment we're running in. By default, we'll let rollup modify the following variable
 // so that it correctly holds the value 'dev' or 'prod':
 let ENV_NAME = (import.meta.env.MODE == 'development') ? 'dev' : 'prod';
+let inBuild = ENV_NAME == 'prod';
 
 // allow forcing prod from the command line via VITE_FORCE_PROD=1
 if (ENV_NAME == 'dev' && import.meta.env.VITE_FORCE_PROD == '1')
@@ -27,8 +28,10 @@ if (ENV_NAME == 'dev')
 // set official global vars
 export const IN_PROD = (ENV_NAME == 'prod');
 export const IN_DEV = !IN_PROD;
+export const IN_BUILD = inBuild;
 window.IN_DEV = IN_DEV;
 window.IN_PROD = IN_PROD;
+window.IN_BUILD = IN_BUILD;
 
 export let app = null; // the Firebase app instance
 export let storage = null;

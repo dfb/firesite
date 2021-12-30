@@ -9,30 +9,14 @@ import { DeleteDoc, SetDoc, adminPageMapWatcher, adminFileMapWatcher, SortedList
 import { getStorage, ref, deleteObject } from 'firebase/storage';
 
 /*
-- right pane shows created
-- topbar detects if you're admin and has a link back to admin page
-- auto select page if there is one match
-- test creating a page in a "subdir"
-- deploy!
-
-file manager
-- delete button, plus lots of warnings
-- replace button: confirm, then replace upload if selected file is of the same type
-- upload new
-- usedby - show all pages that have this ID in their text (we have all the pages loaded in memory so...)
-
-file upload
-- button to select a file
-- on file, if image, extract w/h
-- gen uuid
-- upload using some firebase api
-- write a record to the DB.File collection
-- refresh the files list and auto-select this file
-
-
 LATER
-- image preview/resize/crop (probably never easier that doing all that in a local paint app, and then uploading)
+- make this a modal instead of a separate page
+- make it easy for firesite apps just display a quick admin UI button in their header or whatever, and a logout button
 - keyword search on images
+- let the user rename from the original filename
+- usedby - show all pages that have this ID in their text (we have all the pages loaded in memory so...)
+- overwrite upload warns
+
 
 */
 
