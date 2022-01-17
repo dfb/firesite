@@ -42,18 +42,19 @@ function OnUploadInputChange()
     let file = files[0];
 
     // use an image element to pull the data off disk and so we can inspect it for resizing
-    let blob = new Blob([file], {'type':file.type});
+    rawBlob = new Blob([file], {'type':file.type});
     inputInfo.filename = file.name;
     inputInfo.size = file.size;
     inputInfo.sizeStr = FileSizeStr(file.size);
     inputInfo.isImage = file.type.startsWith('image/');
     if (inputInfo.isImage)
-        inputImg.src = URL.createObjectURL(blob);
+        inputImg.src = URL.createObjectURL(rawBlob);
 }
 
 let resizeW = 0, resizeH = 0, displayW=500;
 let lastResizeW = -1, lastResizeH = -1;
 let curAR = 1;
+let rawBlob = null; // the original file data, as a Blob
 let compressedBlob = null; // the scaled, compressed image, as a Blob
 let compressedSizeStr = '';
 $:readyForUpload = (inputInfo.size && (!inputInfo.isImage || !!compressedBlob));
@@ -137,7 +138,7 @@ function DoUpload()
     {
         console.log('DB record created, starting upload');
         let storageRef = ref(getStorage(), storagePath);
-        let uploadTask = uploadBytesResumable(storageRef, compressedBlob);
+        let uploadTask = uploadBytesResumable(storageRef, inputInfo.isImage ? compressedBlob : rawBlob);
         uploadTask.on('state_changed', snapshot =>
         {
             UpdateModal({percent:100 * snapshot.bytesTransferred / snapshot.totalBytes});
