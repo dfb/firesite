@@ -263,6 +263,8 @@ Loading...
                 {:else if $curTab == TAB_FILES}
                     <b>ID: </b> {curRec.id} <b>Type: </b> {curRec.type}
                     {#if curRec.w && curRec.h}({curRec.w} x {curRec.h}){/if}
+                    <b>Size: </b>{utils.FileSizeStr(curRec.size||0)}
+                    <br/>
                     <button on:click={()=>UploadNewFile(curRec.id)}>Upload new version</button>
                     <button on:click={DeleteFile}>Delete this file</button>
                     <br/><b>Orig filename: </b> {curRec.orig} <a href="{curRec.url}" target="_blank">[link]</a>
