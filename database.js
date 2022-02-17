@@ -1,9 +1,9 @@
 // Helpers for accessing Firestore
 import { writable, readable, derived } from 'svelte/store';
-import { getFirestore, collection, doc, query, where, limit, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore, collection, doc, query, where, limit, getDoc, setDoc, getDocs, updateDoc, deleteDoc, onSnapshot, connectFirestoreEmulator } from 'firebase/firestore';
 
 let firestore = null;
-export { firestore, query, where, limit, collection };
+export { doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc, onSnapshot, firestore, query, where, limit, collection };
 
 // called by index.Init once the firebase has been initialized
 export function Init()
@@ -21,7 +21,7 @@ export function GetDocs(query, limit=null)
 {
     if (limit != null)
         query = query.limit(limit);
-    return query.get().then(res =>
+    return getDocs(query).then(res =>
     {
         let ret = [];
         for (let d of res.docs)
